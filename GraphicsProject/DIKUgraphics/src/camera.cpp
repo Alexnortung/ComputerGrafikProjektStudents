@@ -217,7 +217,7 @@ glm::mat4x4 Camera::InvWindowViewport() const
  */
 glm::mat4x4 Camera::CurrentTransformationMatrix()
 {
-    std::cout << "Camera::CurrentTransformationMatrix(): Not implemented yet!" << std::endl;
+    this->currenttransformationmatrix = WindowViewport() * ViewProjection() * ViewOrientation();
     
     return this->currenttransformationmatrix;
 }
@@ -234,7 +234,7 @@ glm::mat4x4 Camera::InvCurrentTransformationMatrix()
     TraceMessage("InvViewProjection() = " << std::endl << this->invviewprojectionmatrix << std::endl;);
     TraceMessage("InvWindowViewport() = " << std::endl << this->invwindowviewportmatrix << std::endl;);
 
-    std::cout << "Camera::InvCurrentTransformationMatrix(): Not implemented yet!" << std::endl;
+    this->invcurrenttransformationmatrix = InvViewOrientation() * InvViewProjection() * InvWindowViewport();
     
     return this->invcurrenttransformationmatrix;
 }
@@ -468,7 +468,28 @@ void Camera::ComputeViewOrientation(glm::vec3& vrp, glm::vec3& vpn, glm::vec3& v
 {
     Trace("Camera", "ComputeViewOrientation(vec3&, vec3&, vec3&)");
 
-    std::cout << " Camera::ComputeViewOrientation(vec3&, vec3&, vec3&): Not implemented yet!" << std::endl;
+    // R * T(-VRP)
+    //glm::vec3 rz = vpn / glm::length(vpn);
+    //glm::vec3 vupxrz = glm::cross(vup, rz);
+    //glm::vec3 rx = vupxrz / glm::length(vupxrz);
+    //glm::vec3 rzxrx = glm::cross(rz, rx);
+    //glm::vec3 ry = rzxrx / glm::length(rzxrx);
+    glm::vec3 rz(glm::normalize(vpn));
+    glm::vec3 rx(glm::normalize(glm::cross(vup, vpn)));
+    glm::vec3 ry(glm::normalize(glm::cross(rz, rx)));
+
+    glm::mat4x4 R = glm::mat4x4(1.0f);
+    R[0] = glm::vec4(rx, 0.0f);
+    R[1] = glm::vec4(ry, 0.0f);
+    R[2] = glm::vec4(rz, 0.0f);
+    R = glm::transpose(R);
+
+    //glm::mat4x4 trans = glm::mat4x4();
+    //trans[3] = glm::vec4(-vrp, 1.0);
+    //trans = glm::transpose(trans);
+    glm::mat4x4 trans = glm::translate(-vrp);
+
+    this->vieworientationmatrix = R * trans;
 }
 
 /*
@@ -486,7 +507,38 @@ void Camera::ComputeViewProjection(glm::vec3& prp,
 {
     Trace("Camera", "ComputeViewProjection(vec3&, vec2&, vec2&, float, float)");
 
-    std::cout << "Camera::ComputeViewProjection(vec3&, vec2&, vec2&, float, float): Not Implemented yet!" << std::endl;
+    //glm::mat4x4 transprp = glm::mat4x4();
+    //transprp[3] = glm::vec4(-prp, 1.0);
+    //transprp = glm::transpose(transprp);
+    glm::mat4x4 transprp = glm::translate(-prp);
+
+    glm::vec3 CW((upper_right_window + lower_left_window) / 2.0f, 0.0f);
+    glm::vec4 DOP(prp - CW, 0.0f);
+    float shx = -DOP.x / DOP.z;
+    float shy = -DOP.y / DOP.z;
+    //glm::mat4x4 shper = glm::mat4x4();
+    //shper[2] = glm::vec4(shx, shy, 1.0, 0.0);
+    //shper = glm::transpose(shper);
+    glm::mat4x4 shper = glm::shearXY(shx, shy);
+
+    //glm::vec4 vrpnew = shper * transprp * glm::vec4(0.0,0.0,0.0,1.0);
+    float sx = 2.0f * prp.z / (upper_right_window.x - lower_left_window.x);
+    float sy = 2.0f * prp.z / (upper_right_window.y - lower_left_window.y);
+    float s = -1.0f / (back_clipping_plane - prp.z);
+    glm::mat4x4 sper(glm::scale(glm::vec3(sx * s, sy * s, s)));
+
+    //float zmin = -1.0;
+    float zmax = - (front_clipping_plane - prp.z) / (back_clipping_plane - prp.z);
+
+    glm::mat4x4 mperpar(
+        glm::vec4(1.0f, 0.0f, 0.0f, 0.0f),
+        glm::vec4(0.0f, 1.0f, 0.0f, 0.0f),
+        glm::vec4(0.0f, 0.0f, 1.0f / (1.0f + zmax), -1.0f),
+        glm::vec4(0.0f, 0.0f, -zmax / (1.0f + zmax), 0.0f)
+    );
+    //mperpar = glm::transpose(mperpar);
+
+    this->viewprojectionmatrix = mperpar * sper * shper * transprp;
 }
 
 /*
