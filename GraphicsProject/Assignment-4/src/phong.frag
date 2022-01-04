@@ -20,7 +20,19 @@ void main() {
     vec3 color = vec3(0.0f, 0.0f, 0.0f);
 
     // Implement your phong shader program here.
+    // ambient
+    color += AmbientColor * AmbientLightColor;
 
+    vec3 N = normalize(WorldNormal);
+    vec3 L = normalize(LightPosition - WorldVertex);
+    float vdn = dot(N, L);
+    color += DiffuseColor * LightColor * vdn;
+
+    vec3 V = normalize(EyePosition - WorldVertex);
+    vec3 R = normalize(2 * N * vdn - L);
+
+    float rdv = dot(R, V);
+    color += SpecularColor * LightColor * pow(rdv, Shininess);
 
     FragColor = vec4(color, 1.0f);
 }
