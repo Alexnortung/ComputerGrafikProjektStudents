@@ -98,7 +98,16 @@ void SampleFWD(BezierRow const& G, int N, std::vector<glm::vec3>& Vertices)
  */
 void SubDivide(BezierRow const& G, int N, std::vector<glm::vec3>& Vertices)
 {
-    std::cout << "SubDivide(BezierRow&, int, std::vector<glm::vec3>&): Not implemented yet!" << std::endl;
+   if (N == 0) {
+      BezierRow GM = G * BasisMatrix;
+      Vertices.push_back(GM * glm::vec4(0, 0, 0, 1));
+      Vertices.push_back(GM * glm::vec4(1));
+      return;
+   }
+   BezierRow GLB = G * DLB;
+   BezierRow GRB = G * DRB;
+   SubDivide(GLB, N - 1, Vertices);
+   SubDivide(GRB, N - 1, Vertices);
 }
 
 /**
@@ -108,9 +117,22 @@ void SubDivide(BezierRow const& G, int N, std::vector<glm::vec3>& Vertices)
  */
 bool Flatness(BezierRow const& G, float epsilon)
 {
-   std::cout << "Flatness(BezierRow&, float): Not implemented yet!" << std::endl;
- 
-    return true;
+   glm::vec3 G1G4 = G[4] - G[1];
+   glm::vec3 u = glm::normalize(G1G4);
+   glm::vec3 G1G2 = G[2] - G[1];
+   glm::vec3 G4G3 = G[3] - G[4];
+   float G12du = glm::dot(G1G2, u);
+   float G43du = glm::dot(G4G3, u);
+   bool p1 = glm::length(G1G4) == 0;
+   bool p2 = G12du < 0;
+   bool p3 = G43du > 0;
+   bool p4 = G12du > glm::length(G1G4);
+   bool p5 = -G43du > glm::length(G1G4);
+   float d1 = glm::length(G1G2 - G12du * u);
+   bool p6 = d1 > epsilon;
+   float d2 = glm::length(G4G3 - G43du * u);
+   bool p7 = d2 > epsilon;
+   return !(p1 || p2 || p3 || p4 || p5 || p6 || p7);
 }
 
 /**
@@ -122,7 +144,16 @@ bool Flatness(BezierRow const& G, float epsilon)
  */
 void SubDivide(BezierRow const& G, float epsilon, std::vector<glm::vec3>& Vertices, int N)
 {
-    std::cout << "SubDivide(BezierRow&, float, std::vector<glm::vec3>&, int): Not implemented yet!" << std::endl;
+   if (N == 0 || Flatness(G, epsilon)) {
+      BezierRow GM = G * BasisMatrix;
+      Vertices.push_back(GM * glm::vec4(0, 0, 0, 1));
+      Vertices.push_back(GM * glm::vec4(1));
+      return;
+   }
+   BezierRow GLB = G * DLB;
+   BezierRow GRB = G * DRB;
+   SubDivide(GLB, epsilon, Vertices, N - 1);
+   SubDivide(GRB, epsilon, Vertices, N - 1);
 }
 
 /**
