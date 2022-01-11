@@ -46,7 +46,18 @@ glm::mat4x4 DRB;
  */
 void Sample(BezierRow const& G, int N, std::vector<glm::vec3>& Vertices)
 {
-    std::cout << "Sample(BezierRow&, int, std::vector<glm::vec3>&): Not implemented yet!" << std::endl;
+   BezierRow GM = G * BasisMatrix;
+   
+   for (int i = 0; i <= N; i++) {
+      float t = (float)i / N;
+      glm::vec4 tvec(pow(t, 3), pow(t, 2), t, 1);
+      glm::vec3 vertex = GM * tvec;
+      Vertices.push_back(vertex);
+      // If it is not the last or first insert another vertex.
+      if (!(i == 0 || i == N)) {
+         Vertices.push_back(vertex);
+      }
+   }
 }
 
 
@@ -58,7 +69,25 @@ void Sample(BezierRow const& G, int N, std::vector<glm::vec3>& Vertices)
  */
 void SampleFWD(BezierRow const& G, int N, std::vector<glm::vec3>& Vertices)
 {
-    std::cout << "SampleFWD(BezierRow&, int, std::vector<glm::vec3>&): Not implemented yet!" << std::endl;
+   float delta = 1.0f / N;
+   BezierRow GM(G * BasisMatrix);
+   glm::vec3 a = GM[1];
+   glm::vec3 b = GM[2];
+   glm::vec3 c = GM[3];
+   glm::vec3 d = GM[4];
+
+   glm::vec3 f = d;
+   glm::vec3 df = a * powf(delta, 3) + b * powf(delta, 2) + c * delta;
+   glm::vec3 ddf = 6.0f * a * powf(delta, 3) + 2.0f * b * powf(delta, 2);
+   glm::vec3 dddf = 6.0f * a * powf(delta, 3);
+   
+   for (int i = 0; i < N; i++) {
+      Vertices.push_back(f);
+      f += df;
+      df += ddf;
+      ddf += dddf;
+      Vertices.push_back(f);
+   }
 }
 
 /**
