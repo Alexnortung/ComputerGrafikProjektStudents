@@ -324,8 +324,36 @@ void ParametricSurface::SampleSurface()
 {
     Trace("ParametricSurface", "SampleSurface()");
 
-    std::cout << "ParametricSurface::SampleSurface(): Not implemented yet!" << std::endl;
-    
+    for (float u = this->umin; u <= this->umax; u += this->delta_u) {
+        for (float v = this->vmin; v <= this->vmax; v += delta_v) {
+            if (this->frontfacing) {
+                this->CreateFrontFacingData(this->Vertex(u, v),
+                                            this->Vertex(u + this->delta_u, v),
+                                            this->Vertex(u + this->delta_u, v + this->delta_v),
+                                            this->Vertex(u, v + this->delta_v),
+                                            this->vertices,
+                                            this->Normal(u, v),
+                                            this->Normal(u + this->delta_u, v),
+                                            this->Normal(u + this->delta_u, v + this->delta_v),
+                                            this->Normal(u, v + this->delta_v),
+                                            this->normals
+                                            );
+            } else {
+                this->CreateBackFacingData(this->Vertex(u, v),
+                                            this->Vertex(u + this->delta_u, v),
+                                            this->Vertex(u + this->delta_u, v + this->delta_v),
+                                            this->Vertex(u, v + this->delta_v),
+                                            this->vertices,
+                                            this->Normal(u, v),
+                                            this->Normal(u + this->delta_u, v),
+                                            this->Normal(u + this->delta_u, v + this->delta_v),
+                                            this->Normal(u, v + this->delta_v),
+                                            this->normals
+                                            );
+            }
+        }
+    }
+
     this->validdata = true;
 }
 
